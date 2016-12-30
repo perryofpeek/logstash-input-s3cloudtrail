@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
 
-  s.name            = 'logstash-input-s3'
+  s.name            = 'logstash-input-s3cloudtrail'
   s.version         = '3.1.1'
   s.licenses        = ['Apache License (2.0)']
   s.summary         = "Stream events from files from a S3 bucket."

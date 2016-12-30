@@ -11,10 +11,10 @@ require "stud/temporary"
 #
 # Each line from each file generates an event.
 # Files ending in `.gz` are handled as gzip'ed files.
-class LogStash::Inputs::S3 < LogStash::Inputs::Base
+class LogStash::Inputs::S3Cloudtrail < LogStash::Inputs::Base
   include LogStash::PluginMixins::AwsConfig::V2
 
-  config_name "s3"
+  config_name "s3cloudtrail"
 
   default :codec, "plain"
 
@@ -61,7 +61,7 @@ class LogStash::Inputs::S3 < LogStash::Inputs::Base
     require "digest/md5"
     require "aws-sdk-resources"
 
-    @logger.info("Registering s3 input", :bucket => @bucket, :region => @region)
+    @logger.info("Registering s3cloudtrail input", :bucket => @bucket, :region => @region)
 
     s3 = get_s3object
 
@@ -96,12 +96,12 @@ class LogStash::Inputs::S3 < LogStash::Inputs::Base
     objects = {}
 
     @s3bucket.objects(:prefix => @prefix).each do |log|
-      @logger.debug("S3 input: Found key", :key => log.key)
+      @logger.debug("S3Cloudtrail input: Found key", :key => log.key)
 
       unless ignore_filename?(log.key)
         if sincedb.newer?(log.last_modified)
           objects[log.key] = log.last_modified
-          @logger.debug("S3 input: Adding to objects[]", :key => log.key)
+          @logger.debug("S3Cloudtrail input: Adding to objects[]", :key => log.key)
           @logger.debug("objects[] length is: ", :length => objects.length)
         end
       end
@@ -164,7 +164,7 @@ class LogStash::Inputs::S3 < LogStash::Inputs::Base
     # input and send as bytes to the codecs.
     read_file(filename) do |line|
       if stop?
-        @logger.warn("Logstash S3 input, stop reading in the middle of the file, we will read it again when logstash is started")
+        @logger.warn("Logstash S3Cloudtrail input, stop reading in the middle of the file, we will read it again when logstash is started")
         return false
       end
 
@@ -243,9 +243,16 @@ class LogStash::Inputs::S3 < LogStash::Inputs::Base
   private
   def read_gzip_file(filename, block)
     begin
+      
       Zlib::GzipReader.open(filename) do |decoder|
-        decoder.each_line { |line| block.call(line) }
+        lines = decoder.read.split("\n")
+        lines.each do |line|
+           block.call(line)
+        end
       end
+      #Zlib::GzipReader.open(filename) do |decoder|
+      #  decoder.each_line { |line| block.call(line) }
+      #end
     rescue Zlib::Error, Zlib::GzipFile::Error => e
       @logger.error("Gzip codec: We cannot uncompress the gzip file", :filename => filename)
       raise e
@@ -318,7 +325,7 @@ class LogStash::Inputs::S3 < LogStash::Inputs::Base
   # @return [Boolean] True if the file was completely downloaded
   def download_remote_file(remote_object, local_filename)
     completed = false
-    @logger.debug("S3 input: Download remote file", :remote_key => remote_object.key, :local_filename => local_filename)
+    @logger.debug("S3Cloudtrail input: Download remote file", :remote_key => remote_object.key, :local_filename => local_filename)
     File.open(local_filename, 'wb') do |s3file|
       return completed if stop?
       remote_object.get(:response_target => s3file)
